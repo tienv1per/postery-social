@@ -1,0 +1,3 @@
+CREATE USER admin WITH PASSWORD 'adminpassword';
+CREATE DATABASE social;
+GRANT ALL PRIVILEGES ON DATABASE social TO admin;
