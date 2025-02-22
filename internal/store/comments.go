@@ -48,3 +48,7 @@ func (store *CommentStore) GetByPostID(ctx context.Context, postID int64) ([]Com
 
 	return comments, nil
 }
+
+func (store *CommentStore) Create(ctx context.Context, comment *Comment) error {
+	return nil
+}
