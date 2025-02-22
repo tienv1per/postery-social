@@ -8,6 +8,8 @@ import (
 	"postery/internal/store"
 )
 
+const version = "0.0.1"
+
 func main() {
 	cfg := config{
 		addr: env.GetString("ADDR", ":8080"),
@@ -17,6 +19,7 @@ func main() {
 			maxIdleConns: 30,
 			maxIdleTime:  "15m",
 		},
+		env: env.GetString("ENV", "development"),
 	}
 
 	db, err := db.New(
