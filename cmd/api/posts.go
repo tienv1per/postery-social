@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"postery/internal/store"
 	"strconv"
 )
+
+type postkey string
+
+const postCtx postkey = "post"
 
 type CreatePostPayload struct {
 	Title   string   `json:"title" validate:"required,max=100"`
@@ -49,27 +54,9 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "postID")
-	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
+	post := getPostFromCtx(r)
 
-	ctx := r.Context()
-
-	post, err := app.store.Posts.GetByID(ctx, id)
-	if err != nil {
-		switch {
-		case errors.Is(err, store.ErrNotFound):
-			app.notFoundResponse(w, r, err)
-		default:
-			app.internalServerError(w, r, err)
-		}
-		return
-	}
-
-	comments, err := app.store.Comments.GetByPostID(ctx, id)
+	comments, err := app.store.Comments.GetByPostID(r.Context(), post.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 	}
@@ -106,5 +93,53 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
+	post := getPostFromCtx(r)
 
+	if err := writeJSON(w, http.StatusOK, post); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+// Middleware function to add a post object to the request context
+func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		idParam := chi.URLParam(r, "postID")
+		id, err := strconv.ParseInt(idParam, 10, 64)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		// Get the current request context
+		ctx := r.Context()
+
+		post, err := app.store.Posts.GetByID(ctx, id)
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrNotFound):
+				app.notFoundResponse(w, r, err)
+			default:
+				app.internalServerError(w, r, err)
+			}
+			return
+		}
+
+		// Add "post" data to the context
+		ctx = context.WithValue(ctx, postCtx, post)
+		// Pass the updated request with new context to the next handler
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+/*
+@desc Retrieve post data from request context
+@param r *http.Request Incoming HTTP request containing context
+@return *store.Post Post data retrieved from context, or nil if not found
+*/
+func getPostFromCtx(r *http.Request) *store.Post {
+	// Retrieve the value from the context and attempt to cast it to *store.Post
+	// type assertion
+	post, _ := r.Context().Value(postCtx).(*store.Post)
+	return post
 }
