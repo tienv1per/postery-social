@@ -22,6 +22,9 @@ func (store *UserStore) Create(ctx context.Context, user *User) error {
 		INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, created_at
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
 	err := store.db.QueryRowContext(
 		ctx,
 		query,
@@ -40,6 +43,8 @@ func (store *UserStore) Create(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (store *UserStore) GetByID(context.Context, int64) (*User, error) {
+func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 	return nil, nil
 }
