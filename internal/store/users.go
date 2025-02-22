@@ -39,3 +39,7 @@ func (store *UsersStore) Create(ctx context.Context, user *User) error {
 
 	return nil
 }
+
+func (store *UsersStore) GetByID(context.Context, int64) (*User, error) {
+	return nil, nil
+}
