@@ -56,3 +56,18 @@ func writeJSONError(w http.ResponseWriter, status int, message string) error {
 
 	return writeJSON(w, status, &envelop{Error: message})
 }
+
+/*
+@desc Send a JSON response to the client with a given status code
+@param w http.ResponseWriter Response writer to send data to the client
+@param status int: HTTP status code to include in the response
+@param data any: Payload data to be wrapped in a JSON object
+@return error: Returns an error if the JSON encoding or writing fails
+*/
+func (app *application) jsonResponse(w http.ResponseWriter, status int, data any) error {
+	type envelop struct {
+		Data any `json:"data"`
+	}
+
+	return writeJSON(w, status, &envelop{Data: data})
+}
