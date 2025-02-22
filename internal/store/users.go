@@ -5,7 +5,7 @@ import (
 	"database/sql"
 )
 
-type UsersStore struct {
+type UserStore struct {
 	db *sql.DB
 }
 
@@ -17,7 +17,7 @@ type User struct {
 	CreatedAt string `json:"created_at"`
 }
 
-func (store *UsersStore) Create(ctx context.Context, user *User) error {
+func (store *UserStore) Create(ctx context.Context, user *User) error {
 	query := `
 		INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, created_at
 	`
@@ -40,6 +40,6 @@ func (store *UsersStore) Create(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (store *UsersStore) GetByID(context.Context, int64) (*User, error) {
+func (store *UserStore) GetByID(context.Context, int64) (*User, error) {
 	return nil, nil
 }

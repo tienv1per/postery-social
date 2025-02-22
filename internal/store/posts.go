@@ -7,21 +7,22 @@ import (
 	"github.com/lib/pq"
 )
 
-type PostsStore struct {
+type PostStore struct {
 	db *sql.DB
 }
 
 type Post struct {
-	ID        int64    `json:"id"`
-	Content   string   `json:"content"`
-	Title     string   `json:"title"`
-	UserID    int64    `json:"user_id"`
-	Tags      []string `json:"tags"`
-	CreatedAt string   `json:"created_at"`
-	UpdatedAt string   `json:"updated_at"`
+	ID        int64     `json:"id"`
+	Content   string    `json:"content"`
+	Title     string    `json:"title"`
+	UserID    int64     `json:"user_id"`
+	Tags      []string  `json:"tags"`
+	CreatedAt string    `json:"created_at"`
+	UpdatedAt string    `json:"updated_at"`
+	Comments  []Comment `json:"comments"`
 }
 
-func (store *PostsStore) Create(context context.Context, post *Post) error {
+func (store *PostStore) Create(context context.Context, post *Post) error {
 	query := `
 		INSERT INTO posts (content, title, user_id, tags) 
 		VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at
@@ -46,7 +47,7 @@ func (store *PostsStore) Create(context context.Context, post *Post) error {
 	return nil
 }
 
-func (store *PostsStore) GetByID(ctx context.Context, id int64) (*Post, error) {
+func (store *PostStore) GetByID(ctx context.Context, id int64) (*Post, error) {
 	query := `SELECT id, user_id, title, content, created_at, updated_at, tags FROM posts WHERE id=$1`
 	var post Post
 	err := store.db.QueryRowContext(ctx, query, id).Scan(
