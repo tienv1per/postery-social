@@ -2,3 +2,4 @@ migrate create -seq -ext sql -dir ./cmd/migrate/migrations create_users
 migrate -path=./cmd/migrate/migrations -database="postgres://admin:adminpassword@localhost/social?sslmode=disable" up # up migration
 make migration posts_create
 make migrate-up
+make gen-docs # gen swagger docs
