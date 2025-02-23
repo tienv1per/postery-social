@@ -17,7 +17,7 @@ func updatePost(postID int, p UpdatePostPayload, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// Construct the URL for the update endpoint
-	url := fmt.Sprintf("http://localhost:8080/v1/posts/%d", postID)
+	url := fmt.Sprintf("http://localhost:8080/api/v1/posts/%d", postID)
 
 	// Create the JSON payload
 	b, _ := json.Marshal(p)
