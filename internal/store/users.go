@@ -44,7 +44,27 @@ func (store *UserStore) Create(ctx context.Context, user *User) error {
 }
 
 func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
+	query := `SELECT id, username, email, created_at FROM users WHERE id = $1`
+
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
-	return nil, nil
+
+	var user = &User{}
+	err := store.db.QueryRowContext(ctx, query, id).Scan(
+		&(user.ID),
+		&(user.Username),
+		&user.Email,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return user, nil
 }
