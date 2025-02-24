@@ -3,7 +3,14 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"time"
+)
+
+var (
+	ErrDuplicateEmail    = errors.New("a user with that email already exists")
+	ErrDuplicateUsername = errors.New("a user with that username already exists")
 )
 
 type UserStore struct {
@@ -35,7 +42,7 @@ func (p *password) Set(text string) error {
 	return nil
 }
 
-func (store *UserStore) Create(ctx context.Context, user *User) error {
+func (store *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
 		INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, created_at
 	`
@@ -55,7 +62,14 @@ func (store *UserStore) Create(ctx context.Context, user *User) error {
 	)
 
 	if err != nil {
-		return err
+		switch {
+		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+			return ErrDuplicateEmail
+		case err.Error() == `pq: duplicate key value violates unique constraint "users+username_key"`:
+			return ErrDuplicateUsername
+		default:
+			return err
+		}
 	}
 
 	return nil
@@ -87,9 +101,33 @@ func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	return user, nil
 }
 
-func (store *UserStore) CreateAndInvite(ctx context.Context, user *User, token string) error {
+func (store *UserStore) CreateAndInvite(ctx context.Context, user *User, token string, invitationExp time.Duration) error {
 	// transaction wrapper
-	// create the user
-	// create user invitation
+	return withTransaction(store.db, ctx, func(tx *sql.Tx) error {
+		// create the user
+		if err := store.Create(ctx, tx, user); err != nil {
+			return err
+		}
+
+		// create user invitation
+		if err := store.createUserInvitation(ctx, tx, token, invitationExp, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (store *UserStore) createUserInvitation(ctx context.Context, tx *sql.Tx, token string, invitationExp time.Duration, userID int64) error {
+	query := `INSERT INTO user_invitations (token, user_id, expiry) VALUES ($1, $2, $3)`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, token, userID, invitationExp)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"postery/internal/db"
 	"postery/internal/env"
 	"postery/internal/store"
+	"time"
 )
 
 const version = "0.0.1"
@@ -34,6 +35,9 @@ func main() {
 		},
 		env:    env.GetString("ENV", "development"),
 		apiURL: env.GetString("EXTERNAL_URL", "localhost:8080/api"),
+		mail: mailConfig{
+			exp: time.Hour * 24 * 3, // 3 days
+		},
 	}
 
 	// logger
