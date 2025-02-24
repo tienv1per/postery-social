@@ -124,7 +124,7 @@ func (store *UserStore) createUserInvitation(ctx context.Context, tx *sql.Tx, to
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	_, err := tx.ExecContext(ctx, query, token, userID, invitationExp)
+	_, err := tx.ExecContext(ctx, query, token, userID, time.Now().Add(invitationExp))
 	if err != nil {
 		return err
 	}
