@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"log"
+	"go.uber.org/zap"
 	"postery/internal/db"
 	"postery/internal/env"
 	"postery/internal/store"
@@ -36,6 +36,11 @@ func main() {
 		apiURL: env.GetString("EXTERNAL_URL", "localhost:8080/api"),
 	}
 
+	// logger
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
+	// database
 	db, err := db.New(
 		cfg.db.addr,
 		cfg.db.maxOpenConns,
@@ -43,26 +48,27 @@ func main() {
 		cfg.db.maxIdleTime,
 	)
 	if err != nil {
-		log.Panic(err)
+		logger.Fatal(err)
 	}
 
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-			log.Panic("Error when closing DB: ", err)
+			logger.Fatal("Error when closing DB: ", err)
 		}
 	}(db)
 
-	log.Println("DB connection pool established")
+	logger.Info("DB connection pool established")
 
 	appStore := store.NewStorage(db)
 
 	app := &application{
 		store:  appStore,
 		config: cfg,
+		logger: logger,
 	}
 
 	mux := app.mount()
 
-	log.Fatal(app.run(mux))
+	logger.Fatal(app.run(mux))
 }
