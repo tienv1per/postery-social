@@ -104,6 +104,20 @@ func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	return user, nil
 }
 
+func (store *UserStore) Delete(ctx context.Context, userID int64) error {
+	return withTransaction(store.db, ctx, func(tx *sql.Tx) error {
+		if err := store.delete(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		if err := store.deleteUserInvitations(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
 func (store *UserStore) CreateAndInvite(ctx context.Context, user *User, token string, invitationExp time.Duration) error {
 	// transaction wrapper
 	return withTransaction(store.db, ctx, func(tx *sql.Tx) error {
@@ -197,6 +211,20 @@ func (store *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) erro
 	defer cancel()
 
 	_, err := tx.ExecContext(ctx, query, user.Username, user.Email, user.IsActive, user.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (store *UserStore) delete(ctx context.Context, tx *sql.Tx, id int64) error {
+	query := `DELETE FROM users WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

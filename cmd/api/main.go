@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap"
 	"postery/internal/db"
 	"postery/internal/env"
+	"postery/internal/mailer"
 	"postery/internal/store"
 	"time"
 )
@@ -33,10 +34,15 @@ func main() {
 			maxIdleConns: 30,
 			maxIdleTime:  "15m",
 		},
-		env:    env.GetString("ENV", "development"),
-		apiURL: env.GetString("EXTERNAL_URL", "localhost:8080/api"),
+		env:         env.GetString("ENV", "development"),
+		apiURL:      env.GetString("EXTERNAL_URL", "localhost:8080/api"),
+		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 		mail: mailConfig{
 			exp: time.Hour * 24 * 3, // 3 days
+			sendGrid: sendGridConfig{
+				apiKey:    env.GetString("SENDGRID_API_KEY", "YOURAPIKEY"),
+				fromEmail: env.GetString("FROM_EMAIL", "tiennh.etc@gmail.com"),
+			},
 		},
 	}
 
@@ -65,11 +71,13 @@ func main() {
 	logger.Info("DB connection pool established")
 
 	appStore := store.NewStorage(db)
+	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.sendGrid.fromEmail)
 
 	app := &application{
 		store:  appStore,
 		config: cfg,
 		logger: logger,
+		mailer: mailer,
 	}
 
 	mux := app.mount()
