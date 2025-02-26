@@ -159,7 +159,7 @@ func (store *UserStore) Activate(ctx context.Context, token string) error {
 }
 
 func (store *UserStore) getUserFromInvitation(ctx context.Context, tx *sql.Tx, token string) (*User, error) {
-	query := `SELECT u.id, u.username, u.email. u.created_at, u.is_active FROM users u
+	query := `SELECT u.id, u.username, u.email, u.created_at, u.is_active FROM users u
 	JOIN user_invitations ui ON u.id = ui.user_id
 	WHERE ui.token = $1 AND ui.expiry > $2
 	`
@@ -205,7 +205,7 @@ func (store *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) erro
 }
 
 func (store *UserStore) deleteUserInvitations(ctx context.Context, tx *sql.Tx, userID int64) error {
-	query := `DELETE FROM users WHERE id = $1`
+	query := `DELETE FROM user_invitations WHERE user_id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()

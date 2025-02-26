@@ -128,14 +128,14 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	if err := app.store.Users.Activate(r.Context(), token); err != nil {
 		switch err {
 		case store.ErrNotFound:
-			app.badRequestResponse(w, r, err)
+			app.notFoundResponse(w, r, err)
 		default:
 			app.internalServerError(w, r, err)
 		}
 		return
 	}
 
-	if err := app.jsonResponse(w, http.StatusOK, ""); err != nil {
+	if err := app.jsonResponse(w, http.StatusNoContent, ""); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
