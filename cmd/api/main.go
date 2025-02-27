@@ -41,11 +41,16 @@ func main() {
 			exp:       time.Hour * 24 * 3, // 3 days
 			fromEmail: env.GetString("FROM_EMAIL", "tiennh.etc@gmail.com"),
 			sendGrid: sendGridConfig{
-				apiKey:    env.GetString("SENDGRID_API_KEY", "YOURAPIKEY"),
-				fromEmail: env.GetString("FROM_EMAIL", "tiennh.etc@gmail.com"),
+				apiKey: env.GetString("SENDGRID_API_KEY", "YOURAPIKEY"),
 			},
 			mailTrap: mailTrapConfig{
 				apiKey: env.GetString("SENDGRID_API_KEY", ""),
+			},
+		},
+		auth: authConfig{
+			basic: basicConfig{
+				user: env.GetString("AUTH_BASIC_USER", "admin"),
+				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
 			},
 		},
 	}
