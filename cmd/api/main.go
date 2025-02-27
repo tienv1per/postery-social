@@ -38,10 +38,14 @@ func main() {
 		apiURL:      env.GetString("EXTERNAL_URL", "localhost:8080/api"),
 		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 		mail: mailConfig{
-			exp: time.Hour * 24 * 3, // 3 days
+			exp:       time.Hour * 24 * 3, // 3 days
+			fromEmail: env.GetString("FROM_EMAIL", "tiennh.etc@gmail.com"),
 			sendGrid: sendGridConfig{
 				apiKey:    env.GetString("SENDGRID_API_KEY", "YOURAPIKEY"),
 				fromEmail: env.GetString("FROM_EMAIL", "tiennh.etc@gmail.com"),
+			},
+			mailTrap: mailTrapConfig{
+				apiKey: env.GetString("SENDGRID_API_KEY", ""),
 			},
 		},
 	}
@@ -71,7 +75,7 @@ func main() {
 	logger.Info("DB connection pool established")
 
 	appStore := store.NewStorage(db)
-	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.sendGrid.fromEmail)
+	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
 	app := &application{
 		store:  appStore,
