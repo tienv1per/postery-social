@@ -3,3 +3,6 @@ migrate -path=./cmd/migrate/migrations -database="postgres://admin:adminpassword
 make migration posts_create
 make migrate-up
 make gen-docs # gen swagger docs
+
+docker exec -it a53f22dacfc5 redis-cli KEYS "*" # get keys in redis docker
+docker exec -it a53f22dacfc5 redis-cli GET user-213 # get data with key in redis docker

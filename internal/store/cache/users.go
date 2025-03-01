@@ -18,11 +18,16 @@ const UserExpTime = time.Minute
 func (userStore *UsersStore) Get(ctx context.Context, userID int64) (*store.User, error) {
 	cacheKey := fmt.Sprintf("user-%v", userID)
 	data, err := userStore.rdb.Get(ctx, cacheKey).Result()
+
+	if err == redis.Nil {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	var user *store.User
+	var user = &store.User{}
 	if data != "" {
 		err := json.Unmarshal([]byte(data), user)
 		if err != nil {
