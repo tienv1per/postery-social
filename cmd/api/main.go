@@ -2,12 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"postery/internal/auth"
 	"postery/internal/db"
 	"postery/internal/env"
 	"postery/internal/mailer"
 	"postery/internal/store"
+	"postery/internal/store/cache"
 	"time"
 )
 
@@ -34,6 +36,12 @@ func main() {
 			maxOpenConns: 30,
 			maxIdleConns: 30,
 			maxIdleTime:  "15m",
+		},
+		redisCfg: redisConfig{
+			addr:     env.GetString("REDIS_ADDR", "localhost:6379"),
+			password: env.GetString("REDIS_PW", ""),
+			db:       env.GetInt("REDIS_DB", 0),
+			enabled:  env.GetBool("REDIS_ENABLED", false),
 		},
 		env:         env.GetString("ENV", "development"),
 		apiURL:      env.GetString("EXTERNAL_URL", "localhost:8080/api"),
@@ -85,8 +93,16 @@ func main() {
 
 	logger.Info("DB connection pool established")
 
+	// cache
+	var rdb *redis.Client
+	if cfg.redisCfg.enabled {
+		rdb = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.password, cfg.redisCfg.db)
+		logger.Info("Redis cache connection established")
+	}
+
 	appStore := store.NewStorage(db)
 	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
+	cacheStore := cache.NewRedisStorage(rdb)
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)
 
@@ -96,6 +112,7 @@ func main() {
 		logger:        logger,
 		mailer:        mailer,
 		authenticator: jwtAuthenticator,
+		cacheStorage:  cacheStore,
 	}
 
 	mux := app.mount()

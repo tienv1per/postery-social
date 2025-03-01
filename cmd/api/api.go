@@ -11,6 +11,7 @@ import (
 	"postery/internal/auth"
 	"postery/internal/mailer"
 	"postery/internal/store"
+	"postery/internal/store/cache"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type application struct {
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
+	cacheStorage  cache.Storage
 }
 
 type config struct {
@@ -30,6 +32,14 @@ type config struct {
 	mail        mailConfig
 	frontendURL string
 	auth        authConfig
+	redisCfg    redisConfig
+}
+
+type redisConfig struct {
+	addr     string
+	password string
+	db       int
+	enabled  bool
 }
 
 type authConfig struct {
