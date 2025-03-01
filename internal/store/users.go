@@ -49,11 +49,18 @@ func (p *password) Set(text string) error {
 
 func (store *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
-		INSERT INTO users (username, email, password, role_id) VALUES ($1, $2, $3, $4) RETURNING id, created_at, role_id
+		INSERT INTO users (username, email, password, role_id) VALUES 
+		($1, $2, $3, (SELECT id FROM roles WHERE name = $4)) 
+		RETURNING id, created_at, role_id
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
+
+	role := user.Role.Name
+	if role == "" {
+		role = "user"
+	}
 
 	err := tx.QueryRowContext(
 		ctx,
@@ -61,7 +68,7 @@ func (store *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) erro
 		(*user).Username,
 		user.Email,
 		user.Password.hash,
-		user.RoleID,
+		role,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
