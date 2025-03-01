@@ -79,7 +79,7 @@ func (store *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) erro
 }
 
 func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
-	query := `SELECT id, username, email, created_at FROM users WHERE id = $1`
+	query := `SELECT id, username, email, created_at FROM users WHERE id = $1 AND is_active = true`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -88,7 +88,36 @@ func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	err := store.db.QueryRowContext(ctx, query, id).Scan(
 		&(user.ID),
 		&(user.Username),
-		&user.Email,
+		&((*user).Email),
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return user, nil
+}
+
+func (store *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
+	query := `SELECT id, username, email, password, created_at FROM users
+		WHERE email = $1 AND is_active = true
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	var user = &User{}
+	err := store.db.QueryRowContext(ctx, query, email).Scan(
+		&(user.ID),
+		&(user.Username),
+		&((*user).Email),
+		&user.Password.hash,
 		&user.CreatedAt,
 	)
 
