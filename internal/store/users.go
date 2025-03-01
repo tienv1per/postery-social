@@ -79,7 +79,7 @@ func (store *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) erro
 }
 
 func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
-	query := `SELECT id, username, email, created_at FROM users WHERE id = $1 AND is_active = true`
+	query := `SELECT id, username, email, created_at, is_active FROM users WHERE id = $1 AND is_active = true`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -90,6 +90,7 @@ func (store *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		&(user.Username),
 		&((*user).Email),
 		&user.CreatedAt,
+		&((*user).IsActive),
 	)
 
 	if err != nil {

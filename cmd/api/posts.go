@@ -50,13 +50,13 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var userId int64 = 1
+	user := getUserFromContext(r)
+
 	post := &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
-		// todo: change after auth
-		UserID: userId,
+		UserID:  user.ID,
 	}
 
 	ctx := r.Context()
