@@ -47,3 +47,8 @@ func (userStore *UsersStore) Set(ctx context.Context, user *store.User) error {
 
 	return userStore.rdb.SetEX(ctx, cacheKey, json, UserExpTime).Err()
 }
+
+func (userStore *UsersStore) Delete(ctx context.Context, userID int64) {
+	cacheKey := fmt.Sprintf("user-%v", userID)
+	userStore.rdb.Del(ctx, cacheKey)
+}
