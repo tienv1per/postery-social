@@ -8,6 +8,7 @@ import (
 	"postery/internal/db"
 	"postery/internal/env"
 	"postery/internal/mailer"
+	"postery/internal/ratelimiter"
 	"postery/internal/store"
 	"postery/internal/store/cache"
 	"time"
@@ -67,6 +68,11 @@ func main() {
 				iss:    "posterysocial",
 			},
 		},
+		rateLimter: ratelimiter.Config{
+			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20),
+			TimeFrame:            time.Second * 5,
+			Enabled:              env.GetBool("RATE_LIMITER_ENABLED", true),
+		},
 	}
 
 	// logger
@@ -100,6 +106,9 @@ func main() {
 		logger.Info("Redis cache connection established")
 	}
 
+	// rate limiter
+	rateLimiter := ratelimiter.NewFixedWindowLimiter(cfg.rateLimter.RequestsPerTimeFrame, cfg.rateLimter.TimeFrame)
+
 	appStore := store.NewStorage(db)
 	mailer := mailer.NewSendGrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 	cacheStore := cache.NewRedisStorage(rdb)
@@ -113,6 +122,7 @@ func main() {
 		mailer:        mailer,
 		authenticator: jwtAuthenticator,
 		cacheStorage:  cacheStore,
+		rateLimiter:   rateLimiter,
 	}
 
 	mux := app.mount()

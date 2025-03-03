@@ -14,6 +14,7 @@ import (
 	"postery/docs"
 	"postery/internal/auth"
 	"postery/internal/mailer"
+	"postery/internal/ratelimiter"
 	"postery/internal/store"
 	"postery/internal/store/cache"
 	"syscall"
@@ -27,6 +28,7 @@ type application struct {
 	mailer        mailer.Client
 	authenticator auth.Authenticator
 	cacheStorage  cache.Storage
+	rateLimiter   ratelimiter.Limiter
 }
 
 type config struct {
@@ -38,6 +40,7 @@ type config struct {
 	frontendURL string
 	auth        authConfig
 	redisCfg    redisConfig
+	rateLimter  ratelimiter.Config
 }
 
 type redisConfig struct {
@@ -92,11 +95,13 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(app.RateLimiterMiddleware)
 
 	r.Use(middleware.Timeout(time.Second * 60))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
+		r.Get("/health", app.healthCheckHandler)
+		//r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
 		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
