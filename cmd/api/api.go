@@ -1,17 +1,22 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 	"net/http"
+	"os"
+	"os/signal"
 	"postery/docs"
 	"postery/internal/auth"
 	"postery/internal/mailer"
 	"postery/internal/store"
 	"postery/internal/store/cache"
+	"syscall"
 	"time"
 )
 
@@ -149,7 +154,33 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
+	shutdown := make(chan error)
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+
+		app.logger.Infow("signal caught", "signal", s.String())
+
+		shutdown <- server.Shutdown(ctx)
+	}()
+
 	app.logger.Info("Server has started at", app.config.addr)
 
-	return (*server).ListenAndServe()
+	err := server.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.logger.Infow("server has stopped", "addr", app.config.addr, "env", app.config.env)
+
+	return nil
 }
