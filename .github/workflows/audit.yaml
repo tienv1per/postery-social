@@ -20,10 +20,10 @@ jobs:
         run: go mod verify
 
       - name: Build
-        run: go build -v ./..
+        run: go build -v ./...
 
       - name: Run go vet
-        run: go vet ./..
+        run: go vet ./...
       - name: Install staticcheck
         run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
