@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"expvar"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"postery/internal/auth"
@@ -11,6 +12,7 @@ import (
 	"postery/internal/ratelimiter"
 	"postery/internal/store"
 	"postery/internal/store/cache"
+	"runtime"
 	"time"
 )
 
@@ -124,6 +126,15 @@ func main() {
 		cacheStorage:  cacheStore,
 		rateLimiter:   rateLimiter,
 	}
+
+	// metrics collected
+	expvar.NewString("version").Set(version)
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
+	expvar.Publish("goroutines", expvar.Func(func() any {
+		return runtime.NumGoroutine()
+	}))
 
 	mux := app.mount()
 
